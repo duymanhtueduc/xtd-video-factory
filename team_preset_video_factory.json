@@ -1,0 +1,55 @@
+{
+  "team_name": "MausBot Video Factory (Trường Xanh Tuệ Đức)",
+  "version": "1.0.0",
+  "department": "Video Factory",
+  "bots": [
+    {
+      "id": "xtd-video-orchestrator",
+      "name": "Video - Điều phối",
+      "title": "Trưởng ban Điều phối Sản xuất Video",
+      "description": "Tiếp nhận giáo án, nạp hồ sơ phong cách, điều phối 5 agent chuyên môn và tổng hợp bàn giao video.",
+      "skills": ["xtd-video-factory"],
+      "approval_mode": "auto_accept_edits"
+    },
+    {
+      "id": "xtd-video-pedagogy",
+      "name": "Video - Sư phạm",
+      "title": "Chuyên gia Thẩm định Sư phạm & An toàn",
+      "description": "Kiểm duyệt mục tiêu bài học, chặn rò rỉ PII, kiểm tra cờ cam kết hình ảnh học sinh và lọc từ cấm.",
+      "skills": ["xtd-video-factory"],
+      "approval_mode": "auto_accept_edits"
+    },
+    {
+      "id": "xtd-video-scriptwriter",
+      "name": "Video - Biên kịch",
+      "title": "Biên kịch Phân cảnh Bài giảng",
+      "description": "Chuyển giáo án thành kịch bản phân cảnh chi tiết, viết lời thuyết minh giọng Bắc tự nhiên và canh nhịp thời lượng.",
+      "skills": ["xtd-video-factory"],
+      "approval_mode": "auto_accept_edits"
+    },
+    {
+      "id": "xtd-video-visual-dir",
+      "name": "Video - Đạo diễn",
+      "title": "Đạo diễn Hình ảnh & Chuyển động",
+      "description": "Bố cục thẻ trắng-xanh chuẩn Tuệ Đức, tư thế nhân vật 2D, điều phối adapter ảnh/video AI.",
+      "skills": ["xtd-video-factory"],
+      "approval_mode": "auto_accept_edits"
+    },
+    {
+      "id": "xtd-video-renderer",
+      "name": "Video - Kỹ sư dựng",
+      "title": "Kỹ sư Dựng hình & Âm thanh",
+      "description": "Sinh giọng đọc VieNeu-TTS v3 Turbo Hải Đăng, phối âm lượng -14 LUFS, render video Full HD 1080p bằng FFmpeg.",
+      "skills": ["xtd-video-factory"],
+      "approval_mode": "auto_accept_edits"
+    },
+    {
+      "id": "xtd-video-qa",
+      "name": "Video - Kiểm định",
+      "title": "Kiểm định viên Chất lượng & Nghiệm thu",
+      "description": "Đo kiểm ffprobe, kiểm tra phụ đề SRT, rà soát thiếu câu bằng Whisper và ký biên bản nghiệm thu QA_REPORT.md.",
+      "skills": ["xtd-video-factory"],
+      "approval_mode": "auto_accept_edits"
+    }
+  ]
+}
