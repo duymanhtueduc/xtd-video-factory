@@ -1,0 +1,70 @@
+{
+  "profile_id": "xtd_default_v1",
+  "name": "Hồ sơ phong cách chuẩn Trường Xanh Tuệ Đức",
+  "version": "1.0.0",
+  "organization": "Trường Xanh Tuệ Đức (truongxanh.edu.vn)",
+  "brand": {
+    "primary_color": "#1F8A4C",
+    "navy_color": "#1E3A5F",
+    "accent_color": "#FFC83D",
+    "bg_color": "#EEF6F1",
+    "card_color": "#FFFFFF",
+    "text_color": "#142E26",
+    "logo_path": "assets/logo_truong_xanh_tue_duc.png"
+  },
+  "typography": {
+    "font_primary": "Segoe UI, Inter, Arial, sans-serif",
+    "font_heading": "Segoe UI Bold, Inter Bold, sans-serif",
+    "safe_margin_y": [130, 1000]
+  },
+  "character": {
+    "type": "stickman_professor",
+    "title": "Giáo sư Tuệ Đức",
+    "poses_available": ["present", "point", "think", "shrug", "cheer"]
+  },
+  "speech": {
+    "engine": "vieneu_v3_turbo",
+    "voice": "Hải Đăng",
+    "accent": "Miền Bắc chuẩn",
+    "lead_silence_sec": 0.55,
+    "gap_silence_sec": 0.30,
+    "tail_silence_sec": 0.75,
+    "sample_rate": 48000
+  },
+  "audio_standards": {
+    "target_lufs": -14.0,
+    "tolerance_lufs": 1.5,
+    "max_true_peak_dbfs": -1.0
+  },
+  "video_standards": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "aspect_ratio": "16:9",
+    "codec": "libx264",
+    "pix_fmt": "yuv420p"
+  },
+  "safety_gates": {
+    "parental_consent_on_file": 1,
+    "block_pii": true,
+    "pii_blocklist": ["cccd", "cmnd", "sổ hộ khẩu", "địa chỉ nhà riêng", "số tài khoản cá nhân"],
+    "forbidden_phrases": [
+      "một cú bấm",
+      "miễn phí hoàn toàn",
+      "tự động đăng youtube",
+      "tự vẽ ảnh",
+      "vẽ được ngay",
+      "edge-tts",
+      "gtts"
+    ]
+  },
+  "deliverables": [
+    "mp4",
+    "srt",
+    "thumbnail",
+    "script_json",
+    "storyboard_json",
+    "manifest_json",
+    "qa_report_md"
+  ]
+}
