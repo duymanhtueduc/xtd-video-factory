@@ -2,7 +2,8 @@
 .SYNOPSIS
   Trình cài đặt tự động MausBot Video Factory dành cho giáo viên Trường Xanh Tuệ Đức trên Windows 10/11.
 .DESCRIPTION
-  Tự động kiểm tra phần cứng, GPU, cài đặt hoặc định vị FFmpeg, Python, Node, thiết lập môi trường ảo
+  Tự động kiểm tra phần cứng, GPU, cài đặt và sao chép FFmpeg vào thư mục cài đặt độc lập,
+  thiết lập môi trường ảo Python venv với đầy đủ thư viện đồ họa & TTS, tạo file config.json cấu hình hệ thống
   và kích hoạt skill xtd-video-factory cho OpenMausBot mà giáo viên không phải gõ lệnh phức tạp.
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File install.ps1
@@ -35,8 +36,14 @@ Log "   MAUSBOT VIDEO FACTORY — TRÌNH CÀI ĐẶT TỰ ĐỘNG CHO GIÁO VIÊ
 Log "         TRƯỜNG XANH TUỆ ĐỨC (TRUONGXANH.EDU.VN)                 " "Green"
 Log "==================================================================" "Green"
 
-# 1. KIỂM TRA PHẦN CỨNG & DUNG LƯỢNG Ổ ĐĨA
-Log "1. Kiểm tra cấu hình máy tính..."
+# 1. TẠO THƯ MỤC CÀI ĐẶT ĐỘC LẬP
+New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
+$binDir = Join-Path $TargetDir "bin"
+New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+Log "1. Thư mục cài đặt độc lập: $TargetDir"
+
+# 2. KIỂM TRA PHẦN CỨNG & DUNG LƯỢNG Ổ ĐĨA
+Log "2. Kiểm tra cấu hình máy tính..."
 $os = Get-CimInstance Win32_OperatingSystem
 $freeGB = [math]::Round($os.FreePhysicalMemory / 1MB, 1)
 $disk = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Free -gt 0 } | Select-Object -First 1
@@ -61,51 +68,56 @@ foreach ($gpu in $gpus) {
 if ($hasNvidia) {
     LogSuccess "Phát hiện GPU NVIDIA -> Kích hoạt tăng tốc dựng video bằng phần cứng (CUDA/NVENC)."
 } else {
-    LogWarn "Không phát hiện GPU NVIDIA -> Hệ thống sẽ chạy ở chế độ CPU (vẫn tạo được video nhưng thời gian render lâu hơn)."
+    LogWarn "Không phát hiện GPU NVIDIA -> Hệ thống sẽ chạy ở chế độ CPU."
 }
 
-# 2. KIỂM TRA FFMPEG / FFPROBE
-Log "2. Kiểm tra bộ giải mã FFmpeg và ffprobe..."
-$ffmpegCmd = Get-Command "ffmpeg" -ErrorAction SilentlyContinue
-$ffprobeCmd = Get-Command "ffprobe" -ErrorAction SilentlyContinue
+# 3. THIẾT LẬP FFMPEG & FFPROBE VÀO THƯ MỤC BIN ĐỘC LẬP
+Log "3. Thiết lập bộ công cụ FFmpeg độc lập trong $binDir..."
+$targetFFmpeg = Join-Path $binDir "ffmpeg.exe"
+$targetFFprobe = Join-Path $binDir "ffprobe.exe"
 
-# Kiểm tra đường dẫn công cụ nội bộ nếu có
-$internalFFmpeg = "D:\01_Coding_Workspace\tools\ffmpeg\bin\ffmpeg.exe"
-if (-not $ffmpegCmd -and (Test-Path $internalFFmpeg)) {
-    $env:Path += ";D:\01_Coding_Workspace\tools\ffmpeg\bin"
-    $ffmpegCmd = Get-Command "ffmpeg" -ErrorAction SilentlyContinue
-}
+if (-not (Test-Path $targetFFmpeg) -or -not (Test-Path $targetFFprobe)) {
+    $sysFFmpeg = Get-Command "ffmpeg" -ErrorAction SilentlyContinue
+    $sysFFprobe = Get-Command "ffprobe" -ErrorAction SilentlyContinue
 
-if (-not $ffmpegCmd) {
-    LogWarn "Chưa tìm thấy FFmpeg trong hệ thống. Đang tự động cài qua winget..."
-    if (Get-Command "winget" -ErrorAction SilentlyContinue) {
-        winget install --id Gyan.FFmpeg -e --silent --accept-source-agreements --accept-package-agreements | Out-Null
-        $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
-        $ffmpegCmd = Get-Command "ffmpeg" -ErrorAction SilentlyContinue
+    if ($sysFFmpeg -and $sysFFprobe) {
+        Log "   • Sao chép FFmpeg từ hệ thống vào thư mục cài đặt độc lập..."
+        Copy-Item -Path $sysFFmpeg.Source -Destination $targetFFmpeg -Force
+        Copy-Item -Path $sysFFprobe.Source -Destination $targetFFprobe -Force
+    } else {
+        Log "   • Chưa có FFmpeg, đang tự động cài qua winget..."
+        if (Get-Command "winget" -ErrorAction SilentlyContinue) {
+            winget install --id Gyan.FFmpeg -e --silent --accept-source-agreements --accept-package-agreements | Out-Null
+            $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+            $newFFmpeg = Get-Command "ffmpeg" -ErrorAction SilentlyContinue
+            $newFFprobe = Get-Command "ffprobe" -ErrorAction SilentlyContinue
+            if ($newFFmpeg -and $newFFprobe) {
+                Copy-Item -Path $newFFmpeg.Source -Destination $targetFFmpeg -Force
+                Copy-Item -Path $newFFprobe.Source -Destination $targetFFprobe -Force
+            }
+        }
     }
 }
 
-if ($ffmpegCmd) {
-    LogSuccess "FFmpeg đã sẵn sàng: $($ffmpegCmd.Source)"
+if (Test-Path $targetFFmpeg) {
+    LogSuccess "FFmpeg độc lập sẵn sàng tại: $targetFFmpeg"
 } else {
-    LogError "Không thể cài đặt tự động FFmpeg. Vui lòng liên hệ bộ phận IT Trường Xanh Tuệ Đức để được hỗ trợ."
+    LogError "Không thể thiết lập FFmpeg độc lập tại $binDir."
 }
 
-# 3. KIỂM TRA PYTHON (≥ 3.10)
-Log "3. Kiểm tra môi trường Python..."
+# 4. KIỂM TRA PYTHON VÀ THIẾT LẬP MÔI TRƯỜNG ẢO PYTHON VENV
+Log "4. Kiểm tra Python và thiết lập môi trường ảo..."
 $pyCmd = $null
 if (Get-Command "python" -ErrorAction SilentlyContinue) {
     $pyVer = & python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"
-    if ([double]$pyVer -ge 3.10) {
-        $pyCmd = "python"
-    }
+    if ([double]$pyVer -ge 3.10) { $pyCmd = "python" }
 }
 if (-not $pyCmd -and (Get-Command "py" -ErrorAction SilentlyContinue)) {
     $pyCmd = "py"
 }
 
 if (-not $pyCmd) {
-    LogWarn "Chưa có Python 3.11+. Đang tự động cài qua winget..."
+    LogWarn "Chưa có Python 3.10+. Đang tự động cài qua winget..."
     if (Get-Command "winget" -ErrorAction SilentlyContinue) {
         winget install --id Python.Python.3.11 -e --silent --accept-source-agreements --accept-package-agreements | Out-Null
         $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
@@ -113,34 +125,39 @@ if (-not $pyCmd) {
     }
 }
 
-if ($pyCmd) {
-    LogSuccess "Python đã sẵn sàng: $pyCmd"
-} else {
-    LogError "Thiếu Python 3.10+. Vui lòng cài Python từ python.org (nhớ tick 'Add python.exe to PATH')."
-}
-
-# 4. THIẾT LẬP MÔI TRƯỜNG ẢO PYTHON VENV
-Log "4. Thiết lập môi trường ảo và cài đặt thư viện cần thiết..."
 $venvDir = Join-Path $TargetDir ".venv"
-New-Item -ItemType Directory -Force -Path $TargetDir | Out-Null
-
 $venvPython = Join-Path $venvDir "Scripts\python.exe"
+
 if (-not (Test-Path $venvPython)) {
-    Log "   • Đang tạo venv tại $venvDir..."
+    Log "   • Tạo môi trường ảo tại $venvDir..."
     & $pyCmd -m venv $venvDir
 }
 
 if (Test-Path $venvPython) {
-    LogSuccess "Môi trường ảo Python đã sẵn sàng: $venvPython"
-    Log "   • Cài đặt các gói: Pillow, numpy, scipy, faster-whisper..."
+    LogSuccess "Python venv sẵn sàng: $venvPython"
+    Log "   • Đang cài đặt/cập nhật thư viện: Pillow, numpy, scipy, vieneu..."
     & $venvPython -m pip install -q --upgrade pip
-    & $venvPython -m pip install -q pillow numpy scipy
+    & $venvPython -m pip install -q pillow numpy scipy vieneu
 } else {
-    LogError "Không thể khởi tạo môi trường Python venv."
+    LogError "Không thể tạo Python venv tại $venvDir."
 }
 
-# 5. KÍCH HOẠT SKILL CHO OPENMAUSBOT
-Log "5. Kích hoạt Skill xtd-video-factory cho MausBot..."
+# 5. XUẤT TỆP CẤU HÌNH CONFIG.JSON
+$configFile = Join-Path $TargetDir "config.json"
+$config = @{
+    "target_dir" = $TargetDir
+    "python"     = $venvPython
+    "ffmpeg"     = $targetFFmpeg
+    "ffprobe"    = $targetFFprobe
+    "installed_at" = (Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+    "config_type" = "local_zero_cost"
+} | ConvertTo-Json -Depth 3
+
+Set-Content -Path $configFile -Value $config -Encoding UTF8
+LogSuccess "Đã tạo tệp cấu hình độc lập: $configFile"
+
+# 6. KÍCH HOẠT SKILL CHO OPENMAUSBOT
+Log "6. Kích hoạt Skill xtd-video-factory cho MausBot..."
 $openMausSkillsDir = "$env:USERPROFILE\.openmausbot\skills\xtd-video-factory"
 $skillSource = Join-Path $PSScriptRoot_Safe "skill"
 
@@ -149,13 +166,14 @@ try {
     Copy-Item -Path (Join-Path $skillSource "*") -Destination $openMausSkillsDir -Recurse -Force
     LogSuccess "Đã gắn thành công Skill vào OpenMausBot: $openMausSkillsDir"
 } catch {
-    LogWarn "Không thể chép skill vào $openMausSkillsDir: $($_.Exception.Message)"
+    LogWarn "Không thể chép skill vào ${openMausSkillsDir}: $($_.Exception.Message)"
 }
 
-# 6. HOÀN TẤT VÀ BÁO CÁO
+# 7. HOÀN TẤT
 Log "==================================================================" "Green"
 Log "✅ CÀI ĐẶT THÀNH CÔNG MAUSBOT VIDEO FACTORY!" "Green"
 Log "   • Cấu hình đã kích hoạt: Cấu hình 1 (Local / Miễn phí 100%)" "Green"
-Log "   • Thư mục cài đặt: $TargetDir" "Green"
-Log "   • Thầy cô mở OpenMausBot và gõ lệnh: 'Trợ lý Video Bài học, tạo video ...'" "Green"
+Log "   • Python: $venvPython" "Green"
+Log "   • FFmpeg: $targetFFmpeg" "Green"
+Log "   • Config: $configFile" "Green"
 Log "==================================================================" "Green"
